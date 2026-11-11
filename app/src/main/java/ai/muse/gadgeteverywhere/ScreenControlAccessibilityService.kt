@@ -96,11 +96,11 @@ class ScreenControlAccessibilityService : AccessibilityService() {
         val root = try { rootInActiveWindow } catch (_: Exception) { null } ?: return false
         return try {
             var sensitive = false
-            walk(root, 200) { node ->
+            walk(root, 200, visit = { node ->
                 if (!sensitive && node.isPassword && (node.isFocused || node.isEditable)) {
                     sensitive = true
                 }
-            }
+            })
             sensitive
         } finally {
             try { root.recycle() } catch (_: Exception) { }
@@ -378,7 +378,7 @@ class ScreenControlAccessibilityService : AccessibilityService() {
             ?: throw IllegalStateException("no active window; open an app first")
         val out = ArrayList<NodeEntry>()
         try {
-            walk(root, 2000, stopWhen = { out.size >= maxNodes }) { node ->
+            walk(root, 2000, visit = { node ->
                 val rawText = node.text?.toString()?.take(120)
                 val rawDesc = node.contentDescription?.toString()?.take(120)
                 val password = node.isPassword
@@ -404,7 +404,7 @@ class ScreenControlAccessibilityService : AccessibilityService() {
                         focused = node.isFocused,
                     ),
                 )
-            }
+            }, stopWhen = { out.size >= maxNodes })
         } finally {
             try { root.recycle() } catch (_: Exception) { }
         }
