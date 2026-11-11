@@ -69,6 +69,27 @@ Use HTTPS/TLS when available. Certificate validation stays enabled. Plain HTTP o
 
 Home actions report accepted/changed states; physical completion depends on the integration. MQTT success means the broker acknowledged QoS 1, not that an appliance acted. No actual household automation is enabled by default.
 
+## Screen control (opt-in)
+
+`screen.tap`, `screen.tap_text`, `screen.swipe`, `screen.type`,
+`screen.read`, `screen.screenshot`, `screen.back`, `screen.home` and
+`app.switch` are generic single-shot primitives, enabled only when the
+user turns on the AccessibilityService in Settings > Accessibility (and
+grants one screenshot per app restart). They are **not** in the upstream
+0.3.0 release. Full command table, guards and build steps:
+[Screen control](SCREEN_CONTROL.md).
+
+- `screen.read` lists visible nodes with text, bounds and clickable flag;
+  password text is reported as `[password]`.
+- `screen.tap` / `screen.swipe` report **dispatched**, like `tv.launch` —
+  confirm with a fresh `screen.read` or `screen.screenshot` before the
+  next tap. `screen.screenshot` saves one still PNG under
+  `screenshots/`; read it back with `file.read`.
+- Tap and type are refused on a screen with a focused/editable password
+  field. Scenes and automations cannot contain screen-control commands,
+  so nothing taps on a schedule or by itself. There is no quiz logic, no
+  answer bank and no auto-answering in this app.
+
 ## Workspace, diagnostics and trusted developer mode
 
 `file.read`/`file.write` accept paths inside `files/workspace`, preferably relative. Chunks are at most 64 KiB, files at most 64 MiB; writes finalize atomically. Parent/file symlinks and hidden segments are rejected by the file API. Existing scripts using arbitrary absolute app paths must migrate.

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Screen-control AccessibilityService configuration.
+     canPerformGestures is what lets dispatchGesture() tap and swipe.
+     flagRetrieveInteractiveWindows lets rootInActiveWindow see the
+     foreground app's tree; flagReportViewIds keeps node identity stable.
+     No notification listener, no screen recording, no key logging: the
+     service only acts on one explicit remote command at a time. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewFocused|typeViewClicked|typeViewTextChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagRetrieveInteractiveWindows|flagReportViewIds"
+    android:canRetrieveWindowContent="true"
+    android:canPerformGestures="true"
+    android:description="@string/screen_control_description"
+    android:settingsActivity="ai.muse.gadgeteverywhere.ProbeActivity" />

@@ -142,6 +142,24 @@ class Runtime:
         if command == "automation.list":
             return ok({"automations": self.store.rules()})
         if command == "automation.put":
+            # Screen control is single-shot only: a saved scene could
+            # otherwise tap on a schedule with nobody watching. Muse must
+            # send each tap/type as its own live command instead.
+            # (screen.show / screen.clear / screen.status are display
+            # commands, not control commands — scenes may still use them.)
+            _screen_control = {
+                "screen.tap", "screen.tap_text", "screen.swipe", "screen.type",
+                "screen.read", "screen.screenshot", "screen.back", "screen.home",
+                "app.switch",
+            }
+            for action in params.get("actions", []) or []:
+                if not isinstance(action, dict):
+                    continue
+                if str(action.get("command", "")) in _screen_control:
+                    raise ValueError(
+                        "screen-control commands cannot be saved in scenes/automations; "
+                        "send one explicit command at a time",
+                    )
             return ok(self.store.put_rule(params, lambda cmd, p: validate(cmd, p, self.specs())))
         if command == "automation.delete":
             return ok({"deleted": self.store.delete_rule(params["id"])})

@@ -36,6 +36,7 @@ CI builds both universal and modern development APKs with checksums. Download ar
 | Play something | Native audio/video, queues, subtitles and playback controls; choose another Cast receiver |
 | Run a small routine | Local scenes triggered manually, on a schedule or by an event while the service runs |
 | Give Muse eyes and ears | Visible, opt-in camera capture and push-to-talk; on-device Chinese OCR and barcode reading |
+| Control the screen (opt-in) | Tap, swipe, type and screenshots via an AccessibilityService you enable yourself — one explicit Muse command at a time, never on password screens. See [Screen control](docs/SCREEN_CONTROL.md) |
 | Connect your home | Optional Home Assistant states/events and MQTT; outgoing actions are opt-in |
 
 The app uses the **unmodified upstream Muse Gadget SDK** for pairing and cloud communication. The Android layer adds local controls and native hardware features. This is an independent community project, not an official Muse app.
@@ -49,7 +50,7 @@ The app uses the **unmodified upstream Muse Gadget SDK** for pairing and cloud c
 3. **Connect Muse when ready.** Home → **Pair with Muse**. Save an SDK token from [gadgets.muse.ai](https://gadgets.muse.ai/settings/sdk-tokens), open setup, then use the Muse phone app → Settings → Devices → Add Device. Pairing requires BLE peripheral support.
 4. **Start the service after pairing.** Wait for **Connected to your Muse**. Ask Muse to show a message on your device. [Pairing help →](docs/GETTING_STARTED.md#connect-muse)
 
-Remote commands that open screens/apps in the background also need Android overlay access: **Device → Diagnostics & setup → Grant overlay**. Camera, microphone and home integrations are optional.
+Remote commands that open screens/apps in the background also need Android overlay access: **Device → Diagnostics & setup → Grant overlay**. Camera, microphone and home integrations are optional. Screen control is a separate opt-in: **Device → Diagnostics & setup → Grant Accessibility** (enables `screen.tap` / `screen.swipe` / `screen.type` / `screen.read`) and **Grant Screenshot** (one still image per command, granted again after an app restart). See [Screen control](docs/SCREEN_CONTROL.md) for the commands, the password-screen guard and the build steps.
 
 ## See it working
 
