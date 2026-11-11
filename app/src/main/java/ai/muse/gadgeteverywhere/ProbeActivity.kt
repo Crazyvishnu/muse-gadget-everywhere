@@ -146,7 +146,28 @@ class ProbeActivity : Activity() {
                 openSettings(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
             }
         }
-        return Ui.actions(this, overlayButton, batteryButton)
+        val accessibilityButton = Ui.secondaryButton(this, getString(R.string.probe_grant_accessibility)).apply {
+            setOnClickListener {
+                // Screen control (screen.tap / swipe / type / read) needs the
+                // AccessibilityService enabled by the user. There is no
+                // in-app toggle: Android requires the system settings page.
+                // (On OPPO/ColorOS it may sit under Additional settings.)
+                openSettings(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
+        }
+        val screenshotButton = Ui.secondaryButton(this, getString(R.string.probe_grant_screenshot)).apply {
+            setOnClickListener {
+                // One still screenshot (MediaProjection). The system prompt
+                // appears once; the grant is held in memory and must be
+                // given again after an app restart.
+                startActivity(Intent(this@ProbeActivity, ScreenshotRequestActivity::class.java))
+            }
+        }
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(Ui.actions(this@ProbeActivity, overlayButton, batteryButton))
+            addView(Ui.actions(this@ProbeActivity, accessibilityButton, screenshotButton))
+        }
     }
 
     private fun footer(): View {
@@ -176,6 +197,13 @@ class ProbeActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        runProbe()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Returning from Accessibility / overlay / screenshot settings must
+        // refresh the prerequisite rows below without reopening the screen.
         runProbe()
     }
 
@@ -265,6 +293,21 @@ class ProbeActivity : Activity() {
                 Ui.statusRow(
                     this, "battery unrestricted", battery.toString(),
                     toneForAttention(battery),
+                ).first,
+            )
+            // Screen control prerequisites (opt-in, see docs/SCREEN_CONTROL.md).
+            val accessibility = ScreenControlAccessibilityService.isEnabled(this)
+            prereqCard.addView(
+                Ui.statusRow(
+                    this, "accessibility enabled", accessibility.toString(),
+                    toneForAttention(accessibility),
+                ).first,
+            )
+            val screenshot = ScreenshotCapture.isGranted(this)
+            prereqCard.addView(
+                Ui.statusRow(
+                    this, "screenshot granted", screenshot.toString(),
+                    toneForAttention(screenshot),
                 ).first,
             )
         } catch (e: Exception) {

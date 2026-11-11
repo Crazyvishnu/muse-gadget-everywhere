@@ -37,6 +37,12 @@
     <string name="probe_demo">Demo tv.*</string>
     <string name="probe_grant_overlay">Grant overlay</string>
     <string name="probe_battery">Battery settings</string>
+    <string name="probe_grant_accessibility">Grant Accessibility</string>
+    <string name="probe_grant_screenshot">Grant Screenshot</string>
+    <string name="probe_screenshot_granted">Screenshot allowed. You can grant it again after an app restart.</string>
+    <string name="probe_screenshot_denied">Screenshot was not allowed. Tap Grant Screenshot again to allow it.</string>
+    <string name="probe_screenshot_failed">Screenshot could not start: %1$s</string>
+    <string name="screen_control_description">Lets Muse tap, swipe and type on this device when you ask it to, one explicit command at a time. It never answers questions or taps on password screens by itself.</string>
     <string name="probe_settings_missing">This settings page doesn\'t exist on this device.</string>
     <string name="probe_reset_done">Pairing cleared. Pair again to reconnect.</string>
     <string name="probe_demo_append">%1$s\n\ndemo: %2$s</string>

@@ -31,6 +31,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <!-- Android 11+ package visibility: tv.launch must resolve other apps'
@@ -80,10 +81,31 @@
         <activity android:name=".DisplayActivity" android:exported="false" android:launchMode="singleTop" />
         <activity android:name=".VoiceActivity" android:exported="false" />
         <activity android:name=".CameraActivity" android:exported="false" />
+        <!-- Transparent prompt for one still screenshot (MediaProjection).
+             It only shows the system "Allow" prompt; no recording starts. -->
+        <activity
+            android:name=".ScreenshotRequestActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <service
             android:name=".GadgetService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice|mediaPlayback" />
+        <!-- Screen control (opt-in). The user enables it in Settings >
+             Accessibility; until then every screen.* command fails with
+             instructions. BIND_ACCESSIBILITY_SERVICE is mandatory: without
+             it Android refuses to bind the service at all. -->
+        <service
+            android:name=".ScreenControlAccessibilityService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
         <receiver
             android:name=".BootReceiver"
             android:exported="true">

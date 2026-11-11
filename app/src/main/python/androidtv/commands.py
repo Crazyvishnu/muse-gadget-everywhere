@@ -28,6 +28,37 @@ SPECS = {
                                   "ttl_s": field("integer", "Hide after 1..86400 seconds; omit to keep open.")}),
     "screen.clear": spec("Close the current content screen."),
     "screen.status": spec("Read what the content screen actually rendered."),
+    # Screen control (opt-in AccessibilityService + MediaProjection).
+    # Generic single-shot primitives only: Muse reads the screen, then sends
+    # ONE explicit tap/type per command. No quiz logic, no answer bank, no
+    # auto-tapping, and scenes/automations cannot contain these commands.
+    # Tap/type are refused on password / login screens; password text is
+    # redacted in screen.read. screen.tap reports "dispatched", like
+    # tv.launch — verify with screen.read or screen.screenshot.
+    "screen.tap": spec("Tap one screen point, or one node from screen.read. Needs x+y together, or node_index.",
+                       optional={"x": field("integer", "Screen x in pixels, 0..20000."),
+                                 "y": field("integer", "Screen y in pixels, 0..20000."),
+                                 "node_index": field("integer", "Index from screen.read.")}),
+    "screen.tap_text": spec("Tap the first on-screen node whose text matches exactly (then contains).",
+                            {"text": TEXT}),
+    "screen.swipe": spec("Swipe from one point to another.",
+                         {"x1": field("integer", "Start x in pixels, 0..20000."),
+                          "y1": field("integer", "Start y in pixels, 0..20000."),
+                          "x2": field("integer", "End x in pixels, 0..20000."),
+                          "y2": field("integer", "End y in pixels, 0..20000.")},
+                         {"duration_ms": field("integer", "Swipe duration 50..5000 ms, default 300.")}),
+    "screen.type": spec("Type text into the focused field, or into the node at node_index. Tap the field first.",
+                        {"text": TEXT},
+                        {"node_index": field("integer", "Index from screen.read.")}),
+    "screen.read": spec("List visible on-screen nodes with text, bounds and clickable flag. Password text is redacted.",
+                        optional={"max_nodes": field("integer", "How many nodes to list, 1..200, default 100.")}),
+    "screen.screenshot": spec("Capture one still screenshot (user-granted MediaProjection) and save it to the workspace. Read it back with file.read.",
+                              timeout=45000),
+    "screen.back": spec("Press Android Back."),
+    "screen.home": spec("Press Android Home."),
+    "app.switch": spec("Switch app: launch by package (same as tv.launch) or open Recents.",
+                       optional={"target": NAME,
+                                 "action": field("string", "recents")}),
     "media.play": spec("Play audio/video on this Android device without needing a Cast receiver. Returns a job and observed player state.",
                        {"url": URL}, {"title": TEXT, "mime": TEXT,
                                       "queue": field("array", "Additional media URL strings, max 50."),

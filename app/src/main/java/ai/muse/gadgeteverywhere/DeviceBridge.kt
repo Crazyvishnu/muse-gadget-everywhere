@@ -115,6 +115,7 @@ class DeviceBridge(context: Context) {
         val payload = when (command) {
             "cast.discover" -> CastDiscovery.discover(app)
             "vision.analyze" -> vision(params)
+            "screen.screenshot" -> screenshot()
             "sensors.read" -> {
                 onMain { sensors.sample() }
                 Thread.sleep(350)
@@ -142,6 +143,13 @@ class DeviceBridge(context: Context) {
                 .put("camera", pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY))
                 .put("camera_permission", app.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
                 .put("offline_ocr", true).put("offline_barcodes", true).put("sensors", sensors.available())
+                .put(
+                    "screen_control",
+                    JSONObject()
+                        .put("accessibility_enabled", ScreenControlAccessibilityService.isEnabled(app))
+                        .put("screenshot_granted", ScreenshotCapture.isGranted(app))
+                        .put("overlay_granted", Settings.canDrawOverlays(app)),
+                )
         }
         "apps.list" -> {
             val entries = linkedMapOf<String, JSONObject>()
@@ -192,8 +200,79 @@ class DeviceBridge(context: Context) {
             open(CameraActivity::class.java)
             JSONObject().put("state", "awaiting_user")
         }
+        // Screen control (opt-in AccessibilityService + MediaProjection).
+        // Generic single-shot primitives only: no quiz logic, no answer
+        // bank, no auto-tapping. Every tap/type is one explicit remote
+        // command; Muse decides from screen.read / screen.screenshot first.
+        // Tap and type are refused on password / login screens (the service
+        // throws), and password text is redacted in screen.read.
+        // screen.screenshot is handled in invoke(), not here: it must run
+        // on a worker thread, because its ImageReader listener posts to
+        // the main looper and would deadlock on the main thread.
+        "screen.tap" -> {
+            val service = screenService()
+            if (params.has("node_index")) {
+                service.tapIndex(params.getInt("node_index"))
+            } else {
+                service.tapAt(requireInt(params, "x"), requireInt(params, "y"))
+            }
+        }
+        "screen.tap_text" -> {
+            val text = params.getString("text")
+            require(text.isNotBlank() && text.length <= 200) { "text must be 1..200 characters" }
+            screenService().tapText(text)
+        }
+        "screen.swipe" -> {
+            screenService().swipe(
+                requireInt(params, "x1"), requireInt(params, "y1"),
+                requireInt(params, "x2"), requireInt(params, "y2"),
+                params.optInt("duration_ms", 300),
+            )
+        }
+        "screen.type" -> {
+            val text = params.getString("text")
+            require(text.isNotBlank() && text.length <= 1000) { "text must be 1..1000 characters" }
+            screenService().typeText(
+                text,
+                if (params.has("node_index")) params.getInt("node_index") else null,
+            )
+        }
+        "screen.read" -> {
+            screenService().readScreen(params.optInt("max_nodes", 100))
+        }
+        "screen.back" -> screenService().pressBack()
+        "screen.home" -> screenService().pressHome()
+        "app.switch" -> {
+            when {
+                params.has("target") -> {
+                    val target = params.getString("target")
+                    require(target.matches(Regex("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z0-9_]+)+"))) {
+                        "target must be an app package name"
+                    }
+                    tv.launch(target).let { result ->
+                        if (result.ok) JSONObject().put("status", "dispatched").put("result", result.message)
+                        else throw IllegalStateException(result.message)
+                    }
+                }
+                params.optString("action") == "recents" -> screenService().openRecents()
+                else -> throw IllegalArgumentException("app.switch needs target (package) or action \"recents\"")
+            }
+        }
         else -> error("unsupported native command")
     }
+
+    private fun requireInt(params: JSONObject, key: String): Int {
+        if (!params.has(key)) throw IllegalArgumentException("missing: $key")
+        return params.getInt(key)
+    }
+
+    /** The screen-control service, or a user-facing error telling the user to enable it. */
+    private fun screenService(): ScreenControlAccessibilityService =
+        ScreenControlAccessibilityService.instance
+            ?: throw IllegalStateException(ScreenControlAccessibilityService.ENABLE_INSTRUCTIONS)
+
+    /** One still screenshot (worker thread only — see the dispatch comment). */
+    private fun screenshot(): JSONObject = ScreenshotCapture.capture(app)
 
     private fun vision(params: JSONObject): JSONObject {
         val path = workspaceFile(app, params.getString("path"))
